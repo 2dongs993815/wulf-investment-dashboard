@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WULF Investment Dashboard V3</title>
+<style>
+:root{--bg:#070c16;--panel:#0f1828;--panel2:#141f33;--line:#263650;--text:#eef4ff;--muted:#8e9cb4;--green:#36d487;--yellow:#f2c14e;--red:#ff6474;--blue:#72a9ff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 10% 0,#172744 0,#070c16 42%);color:var(--text);font:14px Arial,"Noto Sans KR",sans-serif}.wrap{max-width:1320px;margin:auto;padding:24px 18px 55px}
+header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px}h1{margin:0 0 5px;font-size:29px}.muted{color:var(--muted)}.small{font-size:12px}
+.grid{display:grid;grid-template-columns:1.35fr .75fr .75fr .75fr;gap:12px;margin-bottom:13px}.card{background:rgba(15,24,40,.96);border:1px solid var(--line);border-radius:15px;padding:16px}
+.quote{min-height:135px}.ticker{font-size:13px;color:var(--blue);font-weight:700}.price{font-size:35px;font-weight:800;margin:8px 0}.up{color:var(--green)}.down{color:var(--red)}.neutral{color:var(--yellow)}
+.quote-meta{display:flex;gap:15px;flex-wrap:wrap;color:var(--muted);font-size:12px}.live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:5px}.warn-dot{background:var(--yellow)}
+.btn{border:1px solid var(--line);background:#17253d;color:var(--text);border-radius:8px;padding:8px 10px;cursor:pointer}.btn:hover{background:#223656}.btn.primary{background:#24466f}.actions{display:flex;gap:7px;flex-wrap:wrap}
+.main{display:grid;grid-template-columns:1.1fr .9fr;gap:13px}.wide{grid-column:1/-1}.title{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px}h2{font-size:17px;margin:0}
+.check{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}.check:last-child{border:0}.check input{width:18px;height:18px;accent-color:var(--green)}.tag{font-size:10px;padding:4px 7px;background:#1b2941;border-radius:99px;color:#b9c9e3}.why{font-size:11px;color:var(--muted);margin-top:3px}
+.news{padding:10px 0;border-bottom:1px solid var(--line)}.news:last-child{border:0}.news a{color:var(--text);text-decoration:none;font-weight:600}.news a:hover{color:var(--blue)}.news small{display:block;color:var(--muted);margin-top:4px}
+.alert{padding:10px;border-left:3px solid var(--yellow);background:#151e30;border-radius:8px;margin:7px 0}.alert.red{border-left-color:var(--red)}.alert.green{border-left-color:var(--green)}
+table{width:100%;border-collapse:collapse}th,td{padding:9px;text-align:left;border-bottom:1px solid var(--line)}th{font-size:11px;color:var(--muted)}
+.timeline{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.mile{border:1px solid var(--line);border-radius:9px;padding:11px;background:#0c1423}.mile b{display:block;margin-bottom:4px}
+textarea{width:100%;min-height:105px;background:#0a1220;color:var(--text);border:1px solid var(--line);border-radius:9px;padding:10px;font:inherit;resize:vertical}.bar{height:8px;background:#202d43;border-radius:10px;overflow:hidden}.fill{height:100%;background:var(--green);width:0;transition:.2s}
+@media(max-width:950px){.grid{grid-template-columns:repeat(2,1fr)}.main{grid-template-columns:1fr}.timeline{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:540px){.grid{grid-template-columns:1fr}.timeline{grid-template-columns:1fr}header{display:block}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+ <div><h1>📊 WULF 5-Min Investment Dashboard <span style="font-size:12px;color:#72a9ff">V3</span></h1><div class="muted">시세 → 뉴스 → 핵심 체크 → 리스크 → 투자 가설</div></div>
+ <div style="text-align:right"><div id="now"></div><div class="muted small">시세 자동 새로고침: 60초</div></div>
+</header>
+
+<div class="grid">
+ <div class="card quote">
+  <div class="ticker">NASDAQ · WULF · TeraWulf</div>
+  <div class="price" id="price">불러오는 중...</div>
+  <div id="change">—</div>
+  <div class="quote-meta" style="margin-top:9px"><span id="marketStatus">● 시세 연결 중</span><span id="quoteTime">—</span></div>
+  <div class="actions" style="margin-top:10px"><button class="btn primary" onclick="fetchQuote()">↻ 지금 업데이트</button><button class="btn" onclick="openSearch('WULF TeraWulf latest stock')">뉴스</button></div>
+ </div>
+ <div class="card"><div class="muted small">오늘 체크</div><div class="price" style="font-size:28px" id="pct">0%</div><div class="bar"><div class="fill" id="fill"></div></div><div class="muted small" style="margin-top:8px" id="checkText">0 / 8 완료</div></div>
+ <div class="card"><div class="muted small">내 투자 가설 상태</div><div class="price" style="font-size:25px" id="status">🟡</div><div class="muted small">체크 항목 기반 참고 상태</div></div>
+ <div class="card"><div class="muted small">마지막 기록</div><div style="font-size:18px;font-weight:700;margin-top:10px" id="last">없음</div><div class="muted small" style="margin-top:7px">이 브라우저에 저장</div></div>
+</div>
+
+<div class="main">
+<section class="card"><div class="title"><h2>① 오늘 5분 체크</h2><button class="btn" onclick="resetChecks()">초기화</button></div><div id="checks"></div></section>
+
+<section class="card"><div class="title"><h2>② 오늘 확인할 뉴스</h2><button class="btn primary" onclick="openSearch('WULF TeraWulf after:2026-09-01')">전체 검색</button></div>
+ <div class="news"><a target="_blank" href="https://investors.terawulf.com/news-events/press-releases">TeraWulf 공식 보도자료</a><small>계약·건설·전력·실적 1차 자료</small></div>
+ <div class="news"><a target="_blank" href="https://investors.terawulf.com/sec-filings/all-sec-filings">TeraWulf SEC 공시</a><small>최근 Form 4 / 8-K / 10-Q 등</small></div>
+ <div class="news"><a target="_blank" href="https://news.google.com/search?q=WULF%20TeraWulf">WULF 최신 뉴스</a><small>시장 반응·외부 기사</small></div>
+ <div class="news"><a target="_blank" href="https://news.google.com/search?q=TeraWulf%20Anthropic">Anthropic + WULF</a><small>401MW 프로젝트</small></div>
+ <div class="news"><a target="_blank" href="https://news.google.com/search?q=AI%20data%20center%20power">AI 데이터센터</a><small>전력·CAPEX·수요 환경</small></div>
+</section>
+
+<section class="card"><div class="title"><h2>③ 🚨 오늘의 이상 신호</h2></div><div id="alerts"></div></section>
+
+<section class="card"><div class="title"><h2>④ 핵심 투자 숫자</h2></div>
+<table><tr><th>항목</th><th>기준</th><th>확인 이유</th></tr>
+<tr><td>Anthropic</td><td class="up">401 MW</td><td>대형 장기 고객</td></tr>
+<tr><td>초기 계약</td><td class="up">20년</td><td>장기 계약 기반</td></tr>
+<tr><td>초기 계약 매출</td><td class="up">약 $19B</td><td>계약 규모</td></tr>
+<tr><td>연장 포함</td><td>최대 약 $33B</td><td>옵션 행사 시</td></tr>
+<tr><td>HPC 운영</td><td>102 MW</td><td>실제 매출 전환</td></tr>
+<tr><td>건설 중</td><td>336 MW</td><td>향후 매출 전환</td></tr>
+<tr><td>비용 가이드</td><td>$8–10M/MW</td><td>CAPEX 감시</td></tr>
+</table></section>
+
+<section class="card wide"><div class="title"><h2>⑤ 2년 타임라인</h2><button class="btn" onclick="openSearch('TeraWulf Anthropic 401 MW construction update')">진행 검색</button></div>
+<div class="timeline"><div class="mile"><b>2026</b><span class="muted">계약·전력·자금·건설 준비</span></div><div class="mile"><b>2027 H2</b><span class="muted">Anthropic 용량 공급 시작 예정</span></div><div class="mile"><b>2028 초</b><span class="muted">401MW 목표 완료 예정</span></div><div class="mile"><b>2028+</b><span class="muted">매출·현금흐름 전환 확인</span></div></div></section>
+
+<section class="card"><div class="title"><h2>⑥ 🎯 투자 가설</h2></div><textarea id="thesis" placeholder="내가 WULF에 투자하는 이유를 한 문단으로 적으세요."></textarea><button class="btn" style="margin-top:8px" onclick="saveText()">저장</button></section>
+<section class="card"><div class="title"><h2>⑦ 💥 가설이 깨지는 조건</h2></div><textarea id="breakers" placeholder="예: Anthropic 일정 장기 지연 / CAPEX 급증 / 과도한 증자 / HPC 성장 정체 / 신규 고객 부족"></textarea><button class="btn" style="margin-top:8px" onclick="saveText()">저장</button></section>
+<section class="card wide"><div class="title"><h2>⑧ 📝 오늘 기록</h2></div><textarea id="journal" placeholder="오늘 뉴스에서 무엇이 바뀌었는지 한두 줄만 적으세요."></textarea><div class="actions" style="margin-top:8px"><button class="btn primary" onclick="saveJournal()">오늘 저장</button><button class="btn" onclick="backup()">백업</button></div></section>
+<section class="card wide"><div class="title"><h2>⑨ 🔍 빠른 검색</h2></div><div class="actions">
+<button class="btn" onclick="openSearch('WULF TeraWulf latest')">WULF</button><button class="btn" onclick="openSearch('TeraWulf Anthropic')">Anthropic</button><button class="btn" onclick="openSearch('TeraWulf SEC filing')">SEC</button><button class="btn" onclick="openSearch('AI data center power 2026')">AI 데이터센터</button><button class="btn" onclick="openSearch('IREN CIFR APLD WULF')">경쟁사</button></div></section>
+</div>
+<footer class="muted small" style="margin-top:15px">주가 자동조회는 브라우저에서 공개 시세 데이터를 요청합니다. 데이터 제공처/시장 상태에 따라 지연될 수 있으며, 주문용 실시간 호가로 사용하면 안 됩니다.</footer>
+</div>
+
+<script>
+const ITEMS=[
+["anthropic","Anthropic 401MW 건설 일정","핵심","지연 여부가 가장 중요한 실행 리스크"],
+["hpc","HPC 매출·가동 MW 증가","실적","계약이 실제 매출로 전환되는지"],
+["customers","추가 고객·계약 MW","성장","Anthropic 외 성장동력"],
+["capex","CAPEX·건설비 변화","재무","비용 증가 여부"],
+["funding","현금·부채·자금조달","재무","대규모 건설을 감당할 자금"],
+["dilution","신주 발행·희석","주주","주당가치 영향"],
+["power","전력·인프라 진행","인프라","데이터센터 핵심 병목"],
+["btc","BTC 사업 의존도 감소","전환","AI/HPC 전환 확인"]
+];
+function qs(id){return document.getElementById(id)}
+function getChecks(){return JSON.parse(localStorage.getItem("wulf_v3_checks")||"{}")}
+function renderChecks(){
+ let s=getChecks();
+ qs("checks").innerHTML=ITEMS.map(x=>`<div class="check"><input type="checkbox" ${s[x[0]]?"checked":""} onchange="toggleCheck('${x[0]}',this.checked)"><div><b>${x[1]}</b><div class="why">${x[3]}</div></div><span class="tag">${x[2]}</span></div>`).join("");
+ updateProgress();
+}
+function toggleCheck(id,v){let s=getChecks();s[id]=v;localStorage.setItem("wulf_v3_checks",JSON.stringify(s));localStorage.setItem("wulf_v3_last",new Date().toLocaleString("ko-KR"));renderChecks();loadMeta()}
+function updateProgress(){
+ let s=getChecks(),done=ITEMS.filter(x=>s[x[0]]).length,p=Math.round(done/ITEMS.length*100);
+ qs("pct").textContent=p+"%";qs("fill").style.width=p+"%";qs("checkText").textContent=`${done} / ${ITEMS.length} 완료`;
+ qs("status").textContent=p===100?"🟢":p>=50?"🟡":"🔴";renderAlerts();
+}
+function renderAlerts(){
+ let s=getChecks(),a=[];
+ if(!s.anthropic)a.push(["red","Anthropic 일정 미확인","오늘 가장 먼저 확인"]);
+ if(!s.funding)a.push(["yellow","자금조달 미확인","현금·부채·CAPEX 확인"]);
+ if(!s.dilution)a.push(["yellow","희석 여부 미확인","최근 SEC 공시 확인"]);
+ if(!s.hpc)a.push(["yellow","HPC 실적 미확인","최근 실적/가동 MW 확인"]);
+ if(!a.length)a.push(["green","핵심 항목 점검 완료","마지막으로 신규 공시가 있는지 확인"]);
+ qs("alerts").innerHTML=a.map(x=>`<div class="alert ${x[0]}"><b>${x[1]}</b><div class="muted small">${x[2]}</div></div>`).join("");
+}
+function resetChecks(){if(confirm("체크를 초기화할까요?")){localStorage.removeItem("wulf_v3_checks");renderChecks()}}
+function saveText(){localStorage.setItem("wulf_v3_thesis",qs("thesis").value);localStorage.setItem("wulf_v3_breakers",qs("breakers").value);alert("저장했습니다.")}
+function saveJournal(){localStorage.setItem("wulf_v3_journal",qs("journal").value);localStorage.setItem("wulf_v3_last",new Date().toLocaleString("ko-KR"));loadMeta();alert("오늘 기록을 저장했습니다.")}
+function loadMeta(){qs("last").textContent=localStorage.getItem("wulf_v3_last")||"없음"}
+function openSearch(q){window.open("https://www.google.com/search?q="+encodeURIComponent(q),"search")}
+function backup(){let d={checks:getChecks(),thesis:qs("thesis").value,breakers:qs("breakers").value,journal:qs("journal").value};let a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(d,null,2)],{type:"application/json"}));a.download="wulf-v3-backup.json";a.click()}
+
+async function fetchQuote(){
+ qs("marketStatus").innerHTML='<span class="live-dot warn-dot"></span>시세 조회 중';
+ try{
+   // Yahoo Finance public chart endpoint. Browser/CORS availability can vary.
+   const url="https://query1.finance.yahoo.com/v8/finance/chart/WULF?interval=1m&range=1d";
+   const r=await fetch(url,{cache:"no-store"}); if(!r.ok) throw new Error("quote fetch failed");
+   const d=await r.json(),m=d.chart.result[0].meta;
+   const price=m.regularMarketPrice, prev=m.chartPreviousClose||m.previousClose;
+   const ch=price-prev, pct=ch/prev*100;
+   qs("price").textContent="$"+price.toFixed(2);
+   qs("change").className=ch>=0?"up":"down";
+   qs("change").textContent=(ch>=0?"+":"")+ch.toFixed(2)+" ("+(pct>=0?"+":"")+pct.toFixed(2)+"%)";
+   qs("marketStatus").innerHTML='<span class="live-dot"></span>자동 시세 연결';
+   qs("quoteTime").textContent="업데이트 "+new Date().toLocaleTimeString("ko-KR");
+ }catch(e){
+   qs("marketStatus").innerHTML='<span class="live-dot warn-dot"></span>자동 시세 연결 실패';
+   qs("quoteTime").textContent="새로고침 버튼 또는 인터넷 연결 확인";
+ }
+}
+function init(){
+ qs("now").textContent=new Date().toLocaleDateString("ko-KR",{year:"numeric",month:"long",day:"numeric"});
+ qs("thesis").value=localStorage.getItem("wulf_v3_thesis")||"";
+ qs("breakers").value=localStorage.getItem("wulf_v3_breakers")||"";
+ qs("journal").value=localStorage.getItem("wulf_v3_journal")||"";
+ loadMeta();renderChecks();fetchQuote();setInterval(fetchQuote,60000);
+}
+init();
+</script>
+</body>
+</html>
